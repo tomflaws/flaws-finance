@@ -366,7 +366,7 @@ async function loadTaxPayments() {
   try {
     const data = await dbGetTaxPayments();
     taxPayments = {};
-    (data || []).forEach(p => { taxPayments[`${p.year}-${p.quarter}`] = p; });
+    (data || []).forEach(p => { taxPayments[`${p.year}-${p.quarter}`] = p; }); // quarter may be 'Q1-FED' or 'Q1-MA'
     renderQuarterGrid();
   } catch (e) {
     console.warn('Tax payments load failed:', e);
@@ -380,44 +380,67 @@ function renderQuarterGrid() {
   if (!el) return;
 
   el.innerHTML = TAX_QUARTERS_2026.map(q => {
-    const key = `${year}-${q.q}`;
-    const saved = taxPayments[key] || {};
-    const isPaid = saved.status === 'paid';
+    const fedKey = `${year}-${q.q}-FED`;
+    const maKey = `${year}-${q.q}-MA`;
+    const fed = taxPayments[fedKey] || {};
+    const ma = taxPayments[maKey] || {};
+    const fedPaid = fed.status === 'paid';
+    const maPaid = ma.status === 'paid';
     const dueDate = new Date(q.due);
-    const isOverdue = !isPaid && dueDate < today;
-    const cardClass = isPaid ? 'paid' : (isOverdue ? 'overdue' : 'upcoming');
+    const isOverdue = dueDate < today;
+    const bothPaid = fedPaid && maPaid;
+    const cardClass = bothPaid ? 'paid' : (isOverdue && !bothPaid ? 'overdue' : 'upcoming');
+    const fedTotal = Number(fed.amount || 0);
+    const maTotal = Number(ma.amount || 0);
+    const combined = fedTotal + maTotal;
 
     return `
       <div class="quarter-card ${cardClass}">
         <div class="quarter-label">${q.label}</div>
-        <div class="quarter-due">Due: ${q.due}</div>
-        <div style="font-size:11px;color:var(--text-light)">${q.period}</div>
-        <input type="number" class="quarter-amount-input" placeholder="Amount paid" value="${saved.amount || ''}"
-          onchange="saveTaxPayment('${year}','${q.q}',this.value, document.getElementById('status-${q.q}').value)" />
-        <div class="quarter-status" id="status-row-${q.q}">
-          <button id="btn-paid-${q.q}" class="${isPaid ? 'active-paid' : ''}" onclick="setQuarterStatus('${year}','${q.q}','paid')">✓ Paid</button>
-          <button id="btn-pending-${q.q}" class="${!isPaid && saved.status ? 'active-pending' : ''}" onclick="setQuarterStatus('${year}','${q.q}','pending')">Pending</button>
+        <div class="quarter-due">Due: ${q.due} · ${q.period}</div>
+        ${combined > 0 ? `<div style="font-size:13px;font-weight:700;color:var(--navy);margin:6px 0">Total: ${fmt(combined)}</div>` : ''}
+
+        <div style="margin-top:8px;font-size:11px;font-weight:600;color:var(--text-light);text-transform:uppercase;letter-spacing:0.06em">🇺🇸 Federal</div>
+        <div style="display:flex;gap:6px;margin-top:4px">
+          <input type="number" class="quarter-amount-input" style="flex:1" placeholder="Amount" value="${fed.amount || ''}"
+            onchange="saveTaxPaymentSplit('${year}','${q.q}','FED',this.value)" />
+          <button style="padding:6px 10px;border-radius:5px;border:1px solid var(--border);background:${fedPaid ? 'var(--green)' : 'white'};color:${fedPaid ? 'white' : 'var(--text-mid)'};cursor:pointer;font-size:11px"
+            onclick="toggleTaxPaymentStatus('${year}','${q.q}','FED')">${fedPaid ? '✓ Paid' : 'Mark Paid'}</button>
         </div>
-        <input type="hidden" id="status-${q.q}" value="${saved.status || ''}" />
+
+        <div style="margin-top:10px;font-size:11px;font-weight:600;color:var(--text-light);text-transform:uppercase;letter-spacing:0.06em">🦞 Massachusetts</div>
+        <div style="display:flex;gap:6px;margin-top:4px">
+          <input type="number" class="quarter-amount-input" style="flex:1" placeholder="Amount" value="${ma.amount || ''}"
+            onchange="saveTaxPaymentSplit('${year}','${q.q}','MA',this.value)" />
+          <button style="padding:6px 10px;border-radius:5px;border:1px solid var(--border);background:${maPaid ? 'var(--green)' : 'white'};color:${maPaid ? 'white' : 'var(--text-mid)'};cursor:pointer;font-size:11px"
+            onclick="toggleTaxPaymentStatus('${year}','${q.q}','MA')">${maPaid ? '✓ Paid' : 'Mark Paid'}</button>
+        </div>
       </div>
     `;
   }).join('');
 }
 
-async function setQuarterStatus(year, quarter, status) {
-  const amtInput = document.querySelector(`.quarter-card .quarter-amount-input`);
-  const key = `${year}-${quarter}`;
+async function saveTaxPaymentSplit(year, quarter, jurisdiction, amount) {
+  const key = `${year}-${quarter}-${jurisdiction}`;
   const existing = taxPayments[key] || {};
-  await dbUpsertTaxPayment({ year: Number(year), quarter, status, amount: existing.amount || 0 });
-  await loadTaxPayments();
-}
-
-async function saveTaxPayment(year, quarter, amount, status) {
-  await dbUpsertTaxPayment({ year: Number(year), quarter, amount: Number(amount), status: status || 'pending' });
-  const key = `${year}-${quarter}`;
+  await dbUpsertTaxPayment({ year: Number(year), quarter: `${quarter}-${jurisdiction}`, amount: Number(amount), status: existing.status || 'pending' });
   if (!taxPayments[key]) taxPayments[key] = {};
   taxPayments[key].amount = Number(amount);
+  renderQuarterGrid();
 }
+
+async function toggleTaxPaymentStatus(year, quarter, jurisdiction) {
+  const key = `${year}-${quarter}-${jurisdiction}`;
+  const existing = taxPayments[key] || {};
+  const newStatus = existing.status === 'paid' ? 'pending' : 'paid';
+  await dbUpsertTaxPayment({ year: Number(year), quarter: `${quarter}-${jurisdiction}`, amount: Number(existing.amount || 0), status: newStatus });
+  taxPayments[key] = { ...existing, status: newStatus };
+  renderQuarterGrid();
+}
+
+// Legacy aliases
+async function setQuarterStatus(year, quarter, status) {}
+async function saveTaxPayment(year, quarter, amount, status) {}
 
 function renderTaxDeadlines() {
   const el = document.getElementById('dash-tax-deadline');
@@ -572,12 +595,19 @@ function renderFeeByQuarter() {
 
   const closedFees = window._feeData.filter(f => f.status && f.status.toLowerCase() === 'closed');
   closedFees.forEach(f => {
-    if (!f.month || !f.month.startsWith(String(year))) return;
-    const mo = parseInt(f.month.split('-')[1]);
-    if (mo <= 3) quarterMap.Q1 += Number(f.yourIncome || 0);
-    else if (mo <= 6) quarterMap.Q2 += Number(f.yourIncome || 0);
-    else if (mo <= 9) quarterMap.Q3 += Number(f.yourIncome || 0);
-    else quarterMap.Q4 += Number(f.yourIncome || 0);
+    // Try month field first, fall back to date field
+    let mo = null;
+    if (f.month && f.month.startsWith(String(year))) {
+      mo = parseInt(f.month.split('-')[1]);
+    } else if (f.date && f.date.startsWith(String(year))) {
+      mo = parseInt(f.date.split('-')[1]);
+    }
+    if (!mo) return;
+    const income = Number(f.yourIncome || 0);
+    if (mo <= 3) quarterMap.Q1 += income;
+    else if (mo <= 6) quarterMap.Q2 += income;
+    else if (mo <= 9) quarterMap.Q3 += income;
+    else quarterMap.Q4 += income;
   });
 
   const ytd = Object.values(quarterMap).reduce((s, v) => s + v, 0);
