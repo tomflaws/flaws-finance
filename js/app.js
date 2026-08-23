@@ -59,6 +59,7 @@ async function initApp() {
 function showTab(name, btn) {
   if (name === "feeincome") { loadFeesFromGoogleDrive(); }
   if (name === "college") { loadCollege(); }
+  if (name === "taxes") { renderFeeByQuarter(); }
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
   document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
   document.getElementById(`tab-${name}`).classList.remove('hidden');
@@ -442,94 +443,157 @@ function renderTaxDeadlines() {
   `).join('');
 }
 
-// SE Tax Calculator
-function calcSETax() {
-  const income = Number(document.getElementById('se-income').value) || 0;
-  if (!income) { document.getElementById('se-results').innerHTML = ''; return; }
+// ===== TAX CALCULATIONS =====
 
-  const netSE = income * 0.9235; // SE income subject to SE tax
-  const seTax = netSE * 0.153; // 15.3% (12.4% SS + 2.9% Medicare)
-  const deduction = seTax * 0.5; // Deductible half of SE tax
-  const taxableIncome = income - deduction;
+// 2026 Federal brackets MFJ
+const FED_BRACKETS_MFJ = [
+  { max: 23850, rate: 0.10 }, { max: 96950, rate: 0.12 },
+  { max: 206700, rate: 0.22 }, { max: 394600, rate: 0.24 },
+  { max: 501050, rate: 0.32 }, { max: 751600, rate: 0.35 },
+  { max: Infinity, rate: 0.37 }
+];
+const FED_BRACKETS_SINGLE = [
+  { max: 11925, rate: 0.10 }, { max: 48475, rate: 0.12 },
+  { max: 103350, rate: 0.22 }, { max: 197300, rate: 0.24 },
+  { max: 250525, rate: 0.32 }, { max: 626350, rate: 0.35 },
+  { max: Infinity, rate: 0.37 }
+];
+const STD_DEDUCTION_MFJ = 30000;
+const STD_DEDUCTION_SINGLE = 15000;
 
-  document.getElementById('se-results').innerHTML = `
-    <div class="calc-line"><span>Net SE Earnings (92.35%)</span><span>${fmt(netSE)}</span></div>
-    <div class="calc-line"><span>Social Security (12.4%)</span><span>${fmt(netSE * 0.124)}</span></div>
-    <div class="calc-line"><span>Medicare (2.9%)</span><span>${fmt(netSE * 0.029)}</span></div>
-    <div class="calc-line"><span>SE Tax Deduction (50%)</span><span>-${fmt(deduction)}</span></div>
-    <div class="calc-line"><span>Total SE Tax</span><span>${fmt(seTax)}</span></div>
+function applyBrackets(taxable, brackets) {
+  let tax = 0, prev = 0;
+  for (const b of brackets) {
+    if (taxable <= prev) break;
+    tax += (Math.min(taxable, b.max) - prev) * b.rate;
+    prev = b.max;
+  }
+  return tax;
+}
+
+function calcBothTaxes() {
+  const fedIncome = Number(document.getElementById('fed-income').value) || 0;
+  const fedOther = Number(document.getElementById('fed-other').value) || 0;
+  const fedDed = Number(document.getElementById('fed-deductions').value) || 0;
+  const filing = document.getElementById('fed-filing').value;
+
+  // Auto-fill MA income from Federal
+  const maIncomeEl = document.getElementById('ma-income');
+  if (!maIncomeEl.value && fedIncome) maIncomeEl.value = fedIncome;
+  const maIncome = Number(maIncomeEl.value) || 0;
+  const maOther = Number(document.getElementById('ma-other').value) || 0;
+  const maDed = Number(document.getElementById('ma-deductions').value) || 0;
+
+  if (!fedIncome && !maIncome) {
+    document.getElementById('federal-results').innerHTML = '';
+    document.getElementById('ma-results').innerHTML = '';
+    document.getElementById('combined-results').innerHTML = '';
+    return;
+  }
+
+  // === FEDERAL ===
+  const grossFed = fedIncome + fedOther;
+  const netSE = fedIncome * 0.9235;
+  const seTax = netSE * 0.153;
+  const seDeduction = seTax * 0.5;
+  const agi = grossFed - fedDed - seDeduction;
+  const stdDed = filing === 'mfj' ? STD_DEDUCTION_MFJ : STD_DEDUCTION_SINGLE;
+  const fedTaxable = Math.max(0, agi - stdDed);
+  const brackets = filing === 'mfj' ? FED_BRACKETS_MFJ : FED_BRACKETS_SINGLE;
+  const fedIncomeTax = applyBrackets(fedTaxable, brackets);
+  const fedTotal = fedIncomeTax + seTax;
+  const fedEffective = grossFed > 0 ? (fedTotal / grossFed * 100).toFixed(1) : 0;
+  const fedQuarterly = fedTotal / 4;
+
+  document.getElementById('federal-results').innerHTML = `
+    <div class="calc-line"><span>Gross Income</span><span>${fmt(grossFed)}</span></div>
+    <div class="calc-line"><span>SE Tax Deduction</span><span>-${fmt(seDeduction)}</span></div>
+    <div class="calc-line"><span>Business Deductions</span><span>-${fmt(fedDed)}</span></div>
+    <div class="calc-line"><span>Standard Deduction</span><span>-${fmt(stdDed)}</span></div>
+    <div class="calc-line"><span>Federal Taxable Income</span><span>${fmt(fedTaxable)}</span></div>
+    <div class="calc-line"><span>Federal Income Tax</span><span>${fmt(fedIncomeTax)}</span></div>
+    <div class="calc-line"><span>Self-Employment Tax (15.3%)</span><span>${fmt(seTax)}</span></div>
+    <div class="calc-line"><span>Effective Rate</span><span>${fedEffective}%</span></div>
+    <div class="calc-line"><span>Quarterly Estimate</span><span>${fmt(fedQuarterly)}</span></div>
+    <div class="calc-line"><span>Federal Total</span><span>${fmt(fedTotal)}</span></div>
+  `;
+
+  // === MASSACHUSETTS ===
+  const grossMA = maIncome + maOther;
+  const maTaxable = Math.max(0, grossMA - maDed);
+  let maTax = 0;
+  if (maTaxable <= 1000000) {
+    maTax = maTaxable * 0.05;
+  } else {
+    maTax = 1000000 * 0.05 + (maTaxable - 1000000) * 0.09;
+  }
+  const maEffective = grossMA > 0 ? (maTax / grossMA * 100).toFixed(1) : 0;
+  const maQuarterly = maTax / 4;
+
+  document.getElementById('ma-results').innerHTML = `
+    <div class="calc-line"><span>Gross MA Income</span><span>${fmt(grossMA)}</span></div>
+    <div class="calc-line"><span>MA Deductions</span><span>-${fmt(maDed)}</span></div>
+    <div class="calc-line"><span>MA Taxable Income</span><span>${fmt(maTaxable)}</span></div>
+    ${maTaxable > 1000000 ? `<div class="calc-line"><span>First $1M @ 5%</span><span>${fmt(50000)}</span></div><div class="calc-line"><span>Over $1M @ 9%</span><span>${fmt((maTaxable-1000000)*0.09)}</span></div>` : `<div class="calc-line"><span>MA Rate (5%)</span><span>5%</span></div>`}
+    <div class="calc-line"><span>Effective Rate</span><span>${maEffective}%</span></div>
+    <div class="calc-line"><span>Quarterly Estimate</span><span>${fmt(maQuarterly)}</span></div>
+    <div class="calc-line"><span>MA Total</span><span>${fmt(maTax)}</span></div>
+  `;
+
+  // === COMBINED ===
+  const combinedTotal = fedTotal + maTax;
+  const combinedEffective = grossFed > 0 ? (combinedTotal / grossFed * 100).toFixed(1) : 0;
+  const combinedQuarterly = combinedTotal / 4;
+
+  document.getElementById('combined-results').innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:8px">
+      <div><div style="font-size:11px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.08em">Federal Total</div><div style="font-family:'DM Serif Display',serif;font-size:26px;color:white">${fmt(fedTotal)}</div></div>
+      <div><div style="font-size:11px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.08em">MA Total</div><div style="font-family:'DM Serif Display',serif;font-size:26px;color:white">${fmt(maTax)}</div></div>
+      <div><div style="font-size:11px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.08em">Combined Total</div><div style="font-family:'DM Serif Display',serif;font-size:26px;color:var(--gold-light)">${fmt(combinedTotal)}</div></div>
+      <div><div style="font-size:11px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.08em">Effective Rate</div><div style="font-size:20px;font-weight:600;color:white">${combinedEffective}%</div></div>
+      <div><div style="font-size:11px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.08em">Quarterly Estimate</div><div style="font-family:'DM Serif Display',serif;font-size:26px;color:var(--gold-light)">${fmt(combinedQuarterly)}</div></div>
+      <div><div style="font-size:11px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.08em">Monthly Set-Aside</div><div style="font-family:'DM Serif Display',serif;font-size:26px;color:white">${fmt(combinedTotal/12)}</div></div>
+    </div>
   `;
 }
 
-// Annual Tax Calculator (2026 MFJ brackets, approximate)
-const TAX_BRACKETS_MFJ_2026 = [
-  { max: 23850, rate: 0.10 },
-  { max: 96950, rate: 0.12 },
-  { max: 206700, rate: 0.22 },
-  { max: 394600, rate: 0.24 },
-  { max: 501050, rate: 0.32 },
-  { max: 751600, rate: 0.35 },
-  { max: Infinity, rate: 0.37 },
-];
+// Keep old functions as aliases for compatibility
+function calcSETax() { calcBothTaxes(); }
+function calcAnnualTax() { calcBothTaxes(); }
 
-const TAX_BRACKETS_SINGLE_2026 = [
-  { max: 11925, rate: 0.10 },
-  { max: 48475, rate: 0.12 },
-  { max: 103350, rate: 0.22 },
-  { max: 197300, rate: 0.24 },
-  { max: 250525, rate: 0.32 },
-  { max: 626350, rate: 0.35 },
-  { max: Infinity, rate: 0.37 },
-];
+// Fee by quarter — called after fees load
+function renderFeeByQuarter() {
+  const year = new Date().getFullYear();
+  const quarterMap = { Q1: 0, Q2: 0, Q3: 0, Q4: 0 };
 
-const STANDARD_DEDUCTION_MFJ_2026 = 30000;
-const STANDARD_DEDUCTION_SINGLE_2026 = 15000;
+  // Get fees from the Google Drive data via feeincome-gdrive
+  // We need to access the fees from the DOM or re-fetch — use a global
+  if (typeof window._feeData === 'undefined') return;
 
-function calcAnnualTax() {
-  const gross = Number(document.getElementById('tax-income').value) || 0;
-  const deductions = Number(document.getElementById('tax-deductions').value) || 0;
-  const filing = document.getElementById('tax-filing').value;
+  const closedFees = window._feeData.filter(f => f.status && f.status.toLowerCase() === 'closed');
+  closedFees.forEach(f => {
+    if (!f.month || !f.month.startsWith(String(year))) return;
+    const mo = parseInt(f.month.split('-')[1]);
+    if (mo <= 3) quarterMap.Q1 += Number(f.yourIncome || 0);
+    else if (mo <= 6) quarterMap.Q2 += Number(f.yourIncome || 0);
+    else if (mo <= 9) quarterMap.Q3 += Number(f.yourIncome || 0);
+    else quarterMap.Q4 += Number(f.yourIncome || 0);
+  });
 
-  if (!gross) { document.getElementById('annual-results').innerHTML = ''; return; }
+  const ytd = Object.values(quarterMap).reduce((s, v) => s + v, 0);
+  ['Q1','Q2','Q3','Q4'].forEach((q, i) => {
+    const el = document.getElementById('fee-q' + (i+1));
+    if (el) el.textContent = fmt(quarterMap[q]);
+  });
+  const ytdEl = document.getElementById('tax-fee-ytd');
+  if (ytdEl) ytdEl.textContent = fmt(ytd);
 
-  const brackets = filing === 'mfj' ? TAX_BRACKETS_MFJ_2026 : TAX_BRACKETS_SINGLE_2026;
-  const standardDeduction = filing === 'mfj' ? STANDARD_DEDUCTION_MFJ_2026 : STANDARD_DEDUCTION_SINGLE_2026;
-
-  // SE tax
-  const netSE = gross * 0.9235;
-  const seTax = netSE * 0.153;
-  const seDeduction = seTax * 0.5;
-
-  // AGI
-  const agi = gross - deductions - seDeduction;
-  const taxable = Math.max(0, agi - standardDeduction);
-
-  // Income tax
-  let incomeTax = 0;
-  let prev = 0;
-  for (const bracket of brackets) {
-    if (taxable <= prev) break;
-    const chunk = Math.min(taxable, bracket.max) - prev;
-    incomeTax += chunk * bracket.rate;
-    prev = bracket.max;
+  // Pre-fill the federal income field with YTD
+  const fedEl = document.getElementById('fed-income');
+  if (fedEl && !fedEl.value && ytd > 0) {
+    fedEl.value = Math.round(ytd);
+    calcBothTaxes();
   }
-
-  const totalTax = incomeTax + seTax;
-  const effectiveRate = gross > 0 ? (totalTax / gross * 100).toFixed(1) : 0;
-  const quarterlyEstimate = totalTax / 4;
-
-  document.getElementById('annual-results').innerHTML = `
-    <div class="calc-line"><span>Gross Income</span><span>${fmt(gross)}</span></div>
-    <div class="calc-line"><span>Business Deductions</span><span>-${fmt(deductions)}</span></div>
-    <div class="calc-line"><span>SE Tax Deduction</span><span>-${fmt(seDeduction)}</span></div>
-    <div class="calc-line"><span>Standard Deduction (${filing === 'mfj' ? 'MFJ' : 'Single'})</span><span>-${fmt(standardDeduction)}</span></div>
-    <div class="calc-line"><span>Taxable Income</span><span>${fmt(taxable)}</span></div>
-    <div class="calc-line"><span>Federal Income Tax</span><span>${fmt(incomeTax)}</span></div>
-    <div class="calc-line"><span>Self-Employment Tax</span><span>${fmt(seTax)}</span></div>
-    <div class="calc-line"><span>Effective Rate</span><span>${effectiveRate}%</span></div>
-    <div class="calc-line"><span>Quarterly Estimate</span><span>${fmt(quarterlyEstimate)}</span></div>
-    <div class="calc-line"><span>Estimated Total Tax</span><span>${fmt(totalTax)}</span></div>
-  `;
 }
 
 // ===== MODAL HELPERS =====

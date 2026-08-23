@@ -7,7 +7,9 @@ async function loadFeesFromGoogleDrive() {
     const res = await fetch(`${CONFIG.API_BASE}/fees`);
     if (!res.ok) throw new Error('Failed to fetch fees');
     const { fees } = await res.json();
+    window._feeData = fees; // make available to Tax Center
     renderFeesFromGDrive(fees);
+    if (typeof renderFeeByQuarter === 'function') renderFeeByQuarter();
   } catch (err) {
     console.error('Fee load error:', err);
     document.getElementById('fee-list').innerHTML = '<div class="list-empty">Could not load fee data. Check API connection.</div>';
