@@ -398,12 +398,12 @@ function renderQuarterGrid() {
       <div class="quarter-card ${cardClass}">
         <div class="quarter-label">${q.label}</div>
         <div class="quarter-due">Due: ${q.due} · ${q.period}</div>
-        ${combined > 0 ? `<div style="font-size:13px;font-weight:700;color:var(--navy);margin:6px 0">Total: ${fmt(combined)}</div>` : ''}
+        <div id="quarter-total-${q.q}" style="font-size:13px;font-weight:700;color:var(--navy);margin:6px 0">${combined > 0 ? 'Total: ' + fmt(combined) : ''}</div>
 
         <div style="margin-top:8px;font-size:11px;font-weight:600;color:var(--text-light);text-transform:uppercase;letter-spacing:0.06em">🇺🇸 Federal</div>
         <div style="display:flex;gap:6px;margin-top:4px">
           <input type="number" class="quarter-amount-input" style="flex:1" placeholder="Amount" value="${fed.amount || ''}"
-            onchange="saveTaxPaymentSplit('${year}','${q.q}','FED',this.value)" />
+            oninput="updateQuarterTotal('${year}','${q.q}',this)" onchange="saveTaxPaymentSplit('${year}','${q.q}','FED',this.value)" id="fed-amt-${q.q}" />
           <button style="padding:6px 10px;border-radius:5px;border:1px solid var(--border);background:${fedPaid ? 'var(--green)' : 'white'};color:${fedPaid ? 'white' : 'var(--text-mid)'};cursor:pointer;font-size:11px"
             onclick="toggleTaxPaymentStatus('${year}','${q.q}','FED')">${fedPaid ? '✓ Paid' : 'Mark Paid'}</button>
         </div>
@@ -411,13 +411,24 @@ function renderQuarterGrid() {
         <div style="margin-top:10px;font-size:11px;font-weight:600;color:var(--text-light);text-transform:uppercase;letter-spacing:0.06em">🦞 Massachusetts</div>
         <div style="display:flex;gap:6px;margin-top:4px">
           <input type="number" class="quarter-amount-input" style="flex:1" placeholder="Amount" value="${ma.amount || ''}"
-            onchange="saveTaxPaymentSplit('${year}','${q.q}','MA',this.value)" />
+            oninput="updateQuarterTotal('${year}','${q.q}',this)" onchange="saveTaxPaymentSplit('${year}','${q.q}','MA',this.value)" id="ma-amt-${q.q}" />
           <button style="padding:6px 10px;border-radius:5px;border:1px solid var(--border);background:${maPaid ? 'var(--green)' : 'white'};color:${maPaid ? 'white' : 'var(--text-mid)'};cursor:pointer;font-size:11px"
             onclick="toggleTaxPaymentStatus('${year}','${q.q}','MA')">${maPaid ? '✓ Paid' : 'Mark Paid'}</button>
         </div>
       </div>
     `;
   }).join('');
+}
+
+function updateQuarterTotal(year, quarter, changedInput) {
+  const fedEl = document.getElementById('fed-amt-' + quarter);
+  const maEl = document.getElementById('ma-amt-' + quarter);
+  const totalEl = document.getElementById('quarter-total-' + quarter);
+  if (!fedEl || !maEl || !totalEl) return;
+  const fed = Number(fedEl.value) || 0;
+  const ma = Number(maEl.value) || 0;
+  const combined = fed + ma;
+  totalEl.textContent = combined > 0 ? 'Total: ' + fmt(combined) : '';
 }
 
 async function saveTaxPaymentSplit(year, quarter, jurisdiction, amount) {
