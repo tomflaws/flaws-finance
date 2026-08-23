@@ -54,6 +54,9 @@
         <button class="nav-item" data-tab="feeincome" onclick="showTab('feeincome', this)">
           <span class="nav-icon">⊕</span> Fee Income
         </button>
+        <button class="nav-item" data-tab="college" onclick="showTab('college', this)">
+          <span class="nav-icon">🎓</span> College Savings
+        </button>
         <button class="nav-item" data-tab="taxes" onclick="showTab('taxes', this)">
           <span class="nav-icon">◻</span> Tax Center
         </button>
@@ -175,6 +178,16 @@
             </div>
             <div id="nw-liabilities-list" class="list-empty">No liabilities from connected accounts.</div>
           </div>
+          <div class="card" style="border-left:3px solid var(--gold);grid-column:1/-1">
+            <div class="card-header">
+              <div>
+                <h2 class="card-title">College Savings (529 Plans)</h2>
+                <div style="font-size:11px;color:var(--text-light);margin-top:2px">Not included in net worth total — earmarked for education</div>
+              </div>
+              <span class="card-total" style="color:var(--gold)" id="nw-529-total">$0</span>
+            </div>
+            <div id="nw-529-list" class="list-empty">No 529 accounts added. <a href="#" onclick="showTab('college',null);return false;" style="color:var(--navy)">Add in College Savings tab →</a></div>
+          </div>
         </div>
       </div>
 
@@ -255,6 +268,45 @@
         <div class="card mt-2">
           <h2 class="card-title">Fee Log</h2>
           <div id="fee-list" class="list-empty">No fees logged yet. Click "+ Log Fee" to add one.</div>
+        </div>
+      </div>
+
+      <!-- COLLEGE SAVINGS TAB -->
+      <div id="tab-college" class="tab-panel hidden">
+        <div class="page-header">
+          <h1 class="page-title">College Savings</h1>
+          <button class="btn-primary" onclick="openModal('college-modal')">+ Add 529 Account</button>
+        </div>
+        <div class="kpi-grid">
+          <div class="kpi-card kpi-primary">
+            <div class="kpi-label">Total 529 Balance</div>
+            <div class="kpi-value" id="college-total">$0</div>
+            <div class="kpi-sub">education accounts</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Total Contributed</div>
+            <div class="kpi-value" id="college-contributed">$0</div>
+            <div class="kpi-sub">all time</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Growth</div>
+            <div class="kpi-value" id="college-growth">$0</div>
+            <div class="kpi-sub">balance minus contributions</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Accounts</div>
+            <div class="kpi-value" id="college-count">0</div>
+            <div class="kpi-sub">529 plans</div>
+          </div>
+        </div>
+        <div class="card mt-2">
+          <h2 class="card-title">529 Accounts</h2>
+          <div id="college-list" class="list-empty">No 529 accounts added yet. Click "+ Add 529 Account" to add one.</div>
+        </div>
+        <div class="card mt-2" style="background:var(--cream);border:1px solid var(--border)">
+          <div style="font-size:13px;color:var(--text-mid)">
+            <strong style="color:var(--navy)">Note:</strong> 529 balances are tracked here separately and are <strong>not included</strong> in your Net Worth total, since these funds are earmarked for education expenses.
+          </div>
         </div>
       </div>
 
@@ -416,6 +468,38 @@
       <div class="modal-footer">
         <button class="btn-secondary" onclick="closeModal('vehicle-modal')">Cancel</button>
         <button class="btn-primary" onclick="saveVehicle()">Save Vehicle</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- College 529 Modal -->
+  <div id="college-modal" class="modal-overlay hidden" onclick="closeModalOutside(event, 'college-modal')">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2>Add 529 Account</h2>
+        <button onclick="closeModal('college-modal')" class="modal-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-row">
+          <label>Beneficiary (Child's Name)</label>
+          <input type="text" id="college-beneficiary" placeholder="e.g. James Flaws" class="input-field" />
+        </div>
+        <div class="form-row">
+          <label>Account / Plan Name</label>
+          <input type="text" id="college-plan" placeholder="e.g. Fidelity 529" class="input-field" />
+        </div>
+        <div class="form-row">
+          <label>Current Balance</label>
+          <input type="number" id="college-balance" placeholder="e.g. 45000" class="input-field" />
+        </div>
+        <div class="form-row">
+          <label>Total Contributed (All Time)</label>
+          <input type="number" id="college-contrib" placeholder="e.g. 35000" class="input-field" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="closeModal('college-modal')">Cancel</button>
+        <button class="btn-primary" onclick="saveCollege529()">Save Account</button>
       </div>
     </div>
   </div>
