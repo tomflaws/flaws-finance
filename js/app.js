@@ -32,6 +32,7 @@ async function initApp() {
     loadFeesFromGoogleDrive(),
     loadAssets(),
     loadAllPlaidData(),
+    loadCollege(),
     loadTaxPayments(),
   ]);
   renderDashboard();
@@ -41,6 +42,7 @@ async function initApp() {
 // ===== TAB NAVIGATION =====
 function showTab(name, btn) {
   if (name === "feeincome") { loadFeesFromGoogleDrive(); }
+  if (name === "college") { loadCollege(); }
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
   document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
   document.getElementById(`tab-${name}`).classList.remove('hidden');
@@ -545,4 +547,85 @@ function formatDate(str) {
 function formatMonth(str) {
   const [y, m] = str.split('-');
   return new Date(y, m - 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+}
+
+// ===== COLLEGE SAVINGS (529) =====
+let collegeData = [];
+
+async function loadCollege() {
+  try {
+    const data = await dbGetAssets();
+    collegeData = (data || []).filter(a => a.type === 'college_529');
+    renderCollege();
+    renderNetWorth529();
+  } catch (e) {
+    console.warn('College load failed:', e);
+  }
+}
+
+function renderCollege() {
+  const total = collegeData.reduce((s, a) => s + Number(a.value || 0), 0);
+  const contributed = collegeData.reduce((s, a) => s + Number(a.mortgage || 0), 0); // reusing mortgage field for contributions
+  const growth = total - contributed;
+
+  document.getElementById('college-total').textContent = fmt(total);
+  document.getElementById('college-contributed').textContent = fmt(contributed);
+  document.getElementById('college-growth').textContent = fmt(growth);
+  document.getElementById('college-count').textContent = collegeData.length;
+
+  const el = document.getElementById('college-list');
+  if (!collegeData.length) {
+    el.innerHTML = '<div class="list-empty">No 529 accounts added yet. Click "+ Add 529 Account" to add one.</div>';
+    return;
+  }
+
+  el.innerHTML = collegeData.map(a => {
+    const growth = Number(a.value) - Number(a.mortgage || 0);
+    return `
+      <div class="nw-item">
+        <div>
+          <div class="nw-item-label" style="font-weight:600">${a.label}</div>
+          <div style="font-size:11px;color:var(--text-light)">${a.notes || ''}</div>
+          <div style="font-size:11px;color:var(--text-light)">Contributed: ${fmt(a.mortgage || 0)} · Growth: <span style="color:${growth >= 0 ? 'var(--green)' : 'var(--red)'}">${fmt(growth)}</span></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="nw-item-value" style="color:var(--gold);font-size:18px">${fmt(a.value)}</span>
+          <button class="nw-item-actions" onclick="deleteAsset('${a.id}')" style="background:none;border:none;color:var(--text-light);cursor:pointer">✕</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderNetWorth529() {
+  const total = collegeData.reduce((s, a) => s + Number(a.value || 0), 0);
+  document.getElementById('nw-529-total').textContent = fmt(total);
+  const el = document.getElementById('nw-529-list');
+  if (!collegeData.length) {
+    el.innerHTML = '<div class="list-empty">No 529 accounts added. <a href="#" onclick="showTab(\'college\',null);return false;" style="color:var(--navy)">Add in College Savings tab →</a></div>';
+    return;
+  }
+  el.innerHTML = collegeData.map(a => `
+    <div class="nw-item">
+      <span class="nw-item-label">${a.label}</span>
+      <span class="nw-item-value" style="color:var(--gold)">${fmt(a.value)}</span>
+    </div>
+  `).join('');
+}
+
+async function saveCollege529() {
+  const beneficiary = document.getElementById('college-beneficiary').value.trim();
+  const plan = document.getElementById('college-plan').value.trim();
+  const balance = document.getElementById('college-balance').value;
+  const contrib = document.getElementById('college-contrib').value || 0;
+  if (!beneficiary || !balance) { showToast('Please fill in beneficiary and balance.', 'error'); return; }
+  const label = `${plan || '529'} — ${beneficiary}`;
+  await dbInsertAsset({ type: 'college_529', label, value: Number(balance), mortgage: Number(contrib), notes: plan });
+  closeModal('college-modal');
+  document.getElementById('college-beneficiary').value = '';
+  document.getElementById('college-plan').value = '';
+  document.getElementById('college-balance').value = '';
+  document.getElementById('college-contrib').value = '';
+  await loadCollege();
+  showToast('529 account saved.', 'success');
 }
