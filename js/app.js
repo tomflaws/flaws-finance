@@ -33,6 +33,7 @@ async function initApp() {
     loadAssets(),
     loadAllPlaidData(),
     loadCollege(),
+    loadAccountTags(),
     loadTaxPayments(),
   ]);
   renderDashboard();
@@ -119,7 +120,8 @@ async function loadAssets() {
 }
 
 function calcNetWorth() {
-  const financialAssets = plaidAccounts
+  const tagged529Ids = Object.entries(accountTags).filter(([_,v]) => v.tag === "college_529").map(([k]) => k);
+  const financialAssets = plaidAccounts.filter(a => !tagged529Ids.includes(a.account_id))
     .filter(a => a.type !== 'credit' && a.type !== 'loan')
     .reduce((s, a) => s + (a.balances?.current || 0), 0);
 
@@ -628,4 +630,108 @@ async function saveCollege529() {
   document.getElementById('college-contrib').value = '';
   await loadCollege();
   showToast('529 account saved.', 'success');
+}
+
+// ===== ACCOUNT TAGGING =====
+let accountTags = {};
+
+async function loadAccountTags() {
+  try {
+    const data = await dbGetAssets();
+    accountTags = {};
+    (data || []).filter(a => a.type === 'account_tag').forEach(a => {
+      accountTags[a.label] = { tag: a.notes, beneficiary: a.mortgage ? String(a.mortgage) : '' };
+    });
+  } catch (e) {
+    console.warn('Account tags load failed:', e);
+  }
+}
+
+async function saveAccountTag(accountId, tag, beneficiary) {
+  // Remove existing tag for this account
+  try {
+    const data = await dbGetAssets();
+    const existing = (data || []).find(a => a.type === 'account_tag' && a.label === accountId);
+    if (existing) await dbDeleteAsset(existing.id);
+  } catch (e) {}
+
+  if (tag && tag !== 'default') {
+    await dbInsertAsset({ type: 'account_tag', label: accountId, value: 0, notes: tag, mortgage: beneficiary || '' });
+  }
+  accountTags[accountId] = { tag, beneficiary };
+  closeModal('account-tag-modal');
+  renderAccounts();
+  renderNetWorth();
+  renderCollege();
+  showToast('Account tagged.', 'success');
+}
+
+function openAccountTagModal(accountId, accountName) {
+  const existing = accountTags[accountId] || {};
+  document.getElementById('tag-account-id').value = accountId;
+  document.getElementById('tag-account-name').textContent = accountName;
+  document.getElementById('tag-type').value = existing.tag || 'default';
+  document.getElementById('tag-beneficiary').value = existing.beneficiary || '';
+  document.getElementById('tag-beneficiary-row').style.display = existing.tag === 'college_529' ? 'flex' : 'none';
+  openModal('account-tag-modal');
+}
+
+function onTagTypeChange() {
+  const val = document.getElementById('tag-type').value;
+  document.getElementById('tag-beneficiary-row').style.display = val === 'college_529' ? 'flex' : 'none';
+}
+
+// Override renderCollege to also include Plaid-tagged 529 accounts
+const _originalRenderCollege = renderCollege;
+function renderCollege() {
+  _originalRenderCollege();
+
+  // Also show Plaid accounts tagged as 529
+  const tagged529 = plaidAccounts.filter(a => accountTags[a.account_id]?.tag === 'college_529');
+  if (!tagged529.length) return;
+
+  const plaidTotal = tagged529.reduce((s, a) => s + (a.balances?.current || 0), 0);
+  const manualTotal = collegeData.reduce((s, a) => s + Number(a.value || 0), 0);
+  const grandTotal = plaidTotal + manualTotal;
+
+  // Update total to include both
+  document.getElementById('college-total').textContent = fmt(grandTotal);
+
+  // Add Plaid accounts to the list
+  const el = document.getElementById('college-list');
+  const plaidSection = tagged529.map(a => {
+    const tag = accountTags[a.account_id] || {};
+    return `
+      <div class="nw-item" style="border-left:3px solid var(--gold);padding-left:10px">
+        <div>
+          <div class="nw-item-label" style="font-weight:600">${a.name}</div>
+          <div style="font-size:11px;color:var(--text-light)">${tag.beneficiary ? `Beneficiary: ${tag.beneficiary}` : ''} · ${a.institution_name || 'Vanguard'}</div>
+          <div style="font-size:10px;color:var(--gold);font-weight:600">Auto-synced from Plaid</div>
+        </div>
+        <span class="nw-item-value" style="color:var(--gold);font-size:18px">${fmt(a.balances?.current || 0)}</span>
+      </div>
+    `;
+  }).join('');
+
+  if (el.innerHTML.includes('list-empty')) {
+    el.innerHTML = plaidSection;
+  } else {
+    el.innerHTML = plaidSection + el.innerHTML;
+  }
+
+  // Update net worth 529 section
+  renderNetWorth529WithPlaid(tagged529);
+}
+
+function renderNetWorth529WithPlaid(tagged529) {
+  const plaidTotal = tagged529.reduce((s, a) => s + (a.balances?.current || 0), 0);
+  const manualTotal = collegeData.reduce((s, a) => s + Number(a.value || 0), 0);
+  document.getElementById('nw-529-total').textContent = fmt(plaidTotal + manualTotal);
+
+  const el = document.getElementById('nw-529-list');
+  const allItems = [
+    ...tagged529.map(a => `<div class="nw-item"><span class="nw-item-label">${a.name} (${accountTags[a.account_id]?.beneficiary || '529'})</span><span class="nw-item-value" style="color:var(--gold)">${fmt(a.balances?.current || 0)}</span></div>`),
+    ...collegeData.map(a => `<div class="nw-item"><span class="nw-item-label">${a.label}</span><span class="nw-item-value" style="color:var(--gold)">${fmt(a.value)}</span></div>`)
+  ];
+  el.innerHTML = allItems.length ? allItems.join('') : '<div class="list-empty">No 529 accounts added.</div>';
 }

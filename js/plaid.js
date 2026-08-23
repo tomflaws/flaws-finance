@@ -123,14 +123,24 @@ function renderAccounts() {
   el.innerHTML = plaidAccounts.map(acct => {
     const bal = acct.balances?.current ?? 0;
     const isNeg = acct.type === 'credit' || acct.type === 'loan';
+    const tag = accountTags[acct.account_id] || {};
+    const is529 = tag.tag === 'college_529';
+    const tagBadge = is529
+      ? `<div style="font-size:10px;background:var(--gold);color:var(--navy);padding:2px 7px;border-radius:10px;font-weight:600;display:inline-block;margin-top:3px">🎓 529 · ${tag.beneficiary || ''}</div>`
+      : '';
     return `
-      <div class="account-card">
+      <div class="account-card" style="${is529 ? 'border-left:3px solid var(--gold)' : ''}">
         <div class="account-info">
           <div class="account-name">${acct.name}</div>
           <div class="account-type">${acct.subtype || acct.type}</div>
           <div class="account-institution">${acct.institution_name || ''}</div>
+          ${tagBadge}
         </div>
-        <div class="account-balance ${isNeg ? 'negative' : ''}">${isNeg ? '-' : ''}${fmt(bal)}</div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+          <div class="account-balance ${isNeg ? 'negative' : ''}">${isNeg ? '-' : ''}${fmt(bal)}</div>
+          <button onclick="openAccountTagModal('${acct.account_id}','${acct.name.replace(/'/g,"\\'")}')
+" style="font-size:11px;background:var(--cream-dark);border:1px solid var(--border);border-radius:5px;padding:3px 8px;cursor:pointer;color:var(--text-mid)">⚙ Tag</button>
+        </div>
       </div>
     `;
   }).join('');
