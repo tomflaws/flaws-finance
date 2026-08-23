@@ -2,6 +2,13 @@
 
 // ===== INIT =====
 window.addEventListener('DOMContentLoaded', () => {
+  // Auto-login if previously authenticated
+  const stored = localStorage.getItem('flaws_finance_auth');
+  if (stored && stored === btoa(CONFIG.APP_PASSWORD)) {
+    unlockApp();
+    return;
+  }
+
   document.getElementById('today-date').textContent = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
   document.getElementById('dash-month').textContent = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
   document.getElementById('gate-password').addEventListener('keydown', e => { if (e.key === 'Enter') checkPassword(); });
@@ -18,14 +25,21 @@ window.addEventListener('DOMContentLoaded', () => {
 function checkPassword() {
   const val = document.getElementById('gate-password').value;
   if (val === CONFIG.APP_PASSWORD) {
-    document.getElementById('gate').classList.add('hidden');
-    document.getElementById('app').classList.remove('hidden');
-    initApp();
+    localStorage.setItem('flaws_finance_auth', btoa(CONFIG.APP_PASSWORD));
+    unlockApp();
   } else {
     document.getElementById('gate-error').textContent = 'Incorrect password.';
     document.getElementById('gate-password').value = '';
   }
 }
+
+function unlockApp() {
+  document.getElementById('gate').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+  initApp();
+}
+
+
 
 async function initApp() {
   await Promise.all([
