@@ -104,14 +104,14 @@
           </div>
         </div>
         <div class="dash-grid">
-          <div class="card">
+          <div class="card" onclick="showTab('spending', document.querySelector('[data-tab=spending]'))" style="cursor:pointer;transition:box-shadow 0.15s" onmouseover="this.style.boxShadow='0 4px 16px rgba(15,30,53,0.14)'" onmouseout="this.style.boxShadow=''">
             <div class="card-header">
               <h2 class="card-title">This Month's Spending</h2>
               <span class="card-badge" id="dash-month"></span>
             </div>
             <div id="dash-spending-list" class="list-empty">Connect an account to see spending.</div>
           </div>
-          <div class="card">
+          <div class="card" onclick="showTab('feeincome', document.querySelector('[data-tab=feeincome]'))" style="cursor:pointer;transition:box-shadow 0.15s" onmouseover="this.style.boxShadow='0 4px 16px rgba(15,30,53,0.14)'" onmouseout="this.style.boxShadow=''">
             <div class="card-header">
               <h2 class="card-title">Fee Income YTD</h2>
             </div>
@@ -119,7 +119,7 @@
             <div class="kpi-sub">year to date</div>
             <div id="dash-fee-recent" class="fee-recent-list"></div>
           </div>
-          <div class="card">
+          <div class="card" onclick="showTab('taxes', document.querySelector('[data-tab=taxes]'))" style="cursor:pointer;transition:box-shadow 0.15s" onmouseover="this.style.boxShadow='0 4px 16px rgba(15,30,53,0.14)'" onmouseout="this.style.boxShadow=''">
             <div class="card-header">
               <h2 class="card-title">Next Tax Deadline</h2>
             </div>
