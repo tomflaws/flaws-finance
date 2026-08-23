@@ -20,7 +20,7 @@ function renderFeesFromGDrive(fees) {
     return;
   }
 
-  const SPREADSHEET_ID = '18mlrfeuGe3Ku9RkoG6D8d1GhJpM72f6D';
+  const SPREADSHEET_ID = '1KvlkVFx5F0UMg6V2Ke_EMq91ATCro1_cV3og84-7j5w';
 
   // Only count closed cases for income figures
   const closedFees = fees.filter(f => f.status && f.status.toLowerCase() === 'closed');
