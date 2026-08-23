@@ -76,23 +76,28 @@
           <h1 class="page-title">Good morning, Tom.</h1>
           <span class="page-date" id="today-date"></span>
         </div>
-        <div class="kpi-grid">
-          <div class="kpi-card kpi-primary">
+        <div class="kpi-grid" style="grid-template-columns:repeat(5,1fr)">
+          <div class="kpi-card kpi-primary" onclick="showTab('networth', document.querySelector('[data-tab=networth]'))" style="cursor:pointer" title="View Net Worth">
             <div class="kpi-label">Net Worth</div>
             <div class="kpi-value" id="dash-networth">—</div>
             <div class="kpi-sub">assets minus liabilities</div>
           </div>
-          <div class="kpi-card">
+          <div class="kpi-card" onclick="showTab('accounts', document.querySelector('[data-tab=accounts]'))" style="cursor:pointer;transition:box-shadow 0.15s" onmouseover="this.style.boxShadow='0 4px 16px rgba(15,30,53,0.14)'" onmouseout="this.style.boxShadow=''" title="View Accounts">
             <div class="kpi-label">Cash & Savings</div>
             <div class="kpi-value" id="dash-cash">—</div>
             <div class="kpi-sub">checking + savings</div>
           </div>
-          <div class="kpi-card">
+          <div class="kpi-card" onclick="showTab('investments', document.querySelector('[data-tab=investments]'))" style="cursor:pointer;transition:box-shadow 0.15s" onmouseover="this.style.boxShadow='0 4px 16px rgba(15,30,53,0.14)'" onmouseout="this.style.boxShadow=''" title="View Investments">
             <div class="kpi-label">Investments</div>
             <div class="kpi-value" id="dash-investments">—</div>
             <div class="kpi-sub">brokerage + retirement</div>
           </div>
-          <div class="kpi-card kpi-warn">
+          <div class="kpi-card" onclick="showTab('college', document.querySelector('[data-tab=college]'))" style="cursor:pointer;border-left:3px solid var(--gold);transition:box-shadow 0.15s" onmouseover="this.style.boxShadow='0 4px 16px rgba(15,30,53,0.14)'" onmouseout="this.style.boxShadow=''" title="View College Savings">
+            <div class="kpi-label">College Savings</div>
+            <div class="kpi-value" id="dash-college" style="color:var(--gold)">—</div>
+            <div class="kpi-sub">529 plans · excluded from NW</div>
+          </div>
+          <div class="kpi-card kpi-warn" onclick="showTab('spending', document.querySelector('[data-tab=spending]'))" style="cursor:pointer;transition:box-shadow 0.15s" onmouseover="this.style.boxShadow='0 4px 16px rgba(15,30,53,0.14)'" onmouseout="this.style.boxShadow=''" title="View Spending">
             <div class="kpi-label">Credit Card Balances</div>
             <div class="kpi-value" id="dash-credit">—</div>
             <div class="kpi-sub">total owed</div>
