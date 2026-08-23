@@ -40,6 +40,7 @@ async function initApp() {
 
 // ===== TAB NAVIGATION =====
 function showTab(name, btn) {
+  if (name === "feeincome") { loadFeesFromGoogleDrive(); }
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
   document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
   document.getElementById(`tab-${name}`).classList.remove('hidden');
