@@ -319,58 +319,88 @@
       <div id="tab-taxes" class="tab-panel hidden">
         <div class="page-header">
           <h1 class="page-title">Tax Center</h1>
+          <span style="font-size:11px;color:var(--text-light)">Estimates for planning only — not tax advice</span>
         </div>
 
-        <div class="tax-grid">
-
-          <!-- Quarterly Tracker -->
-          <div class="card">
-            <h2 class="card-title">Quarterly Estimated Payments</h2>
-            <p class="card-desc">Track your IRS estimated tax payments (Form 1040-ES).</p>
-            <div class="quarter-grid" id="quarter-grid"></div>
+        <!-- Fee Income by Quarter -->
+        <div class="card" style="margin-bottom:16px">
+          <h2 class="card-title">Fee Income by Quarter (Current Year)</h2>
+          <p class="card-desc">Closed cases only — use these figures for quarterly estimated tax planning.</p>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:8px">
+            <div class="quarter-card" id="fee-q1-card"><div class="quarter-label">Q1 · Jan–Mar</div><div style="font-family:'DM Serif Display',serif;font-size:22px;color:var(--navy);margin:6px 0" id="fee-q1">—</div><div class="quarter-due">Due Apr 15</div></div>
+            <div class="quarter-card" id="fee-q2-card"><div class="quarter-label">Q2 · Apr–Jun</div><div style="font-family:'DM Serif Display',serif;font-size:22px;color:var(--navy);margin:6px 0" id="fee-q2">—</div><div class="quarter-due">Due Jun 16</div></div>
+            <div class="quarter-card" id="fee-q3-card"><div class="quarter-label">Q3 · Jul–Sep</div><div style="font-family:'DM Serif Display',serif;font-size:22px;color:var(--navy);margin:6px 0" id="fee-q3">—</div><div class="quarter-due">Due Sep 15</div></div>
+            <div class="quarter-card" id="fee-q4-card"><div class="quarter-label">Q4 · Oct–Dec</div><div style="font-family:'DM Serif Display',serif;font-size:22px;color:var(--navy);margin:6px 0" id="fee-q4">—</div><div class="quarter-due">Due Jan 15</div></div>
           </div>
+          <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);display:flex;justify-content:space-between">
+            <span style="font-size:12px;color:var(--text-light)">YTD Total (closed cases)</span>
+            <span style="font-weight:700;font-size:16px;color:var(--navy)" id="tax-fee-ytd">—</span>
+          </div>
+        </div>
 
-          <!-- SE Tax Calculator -->
+        <!-- Quarterly Payment Tracker -->
+        <div class="card" style="margin-bottom:16px">
+          <h2 class="card-title">Quarterly Estimated Payments</h2>
+          <p class="card-desc">Track your IRS and MA estimated tax payments.</p>
+          <div class="quarter-grid" id="quarter-grid"></div>
+        </div>
+
+        <!-- Federal + MA Side by Side -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+
+          <!-- Federal Tax -->
           <div class="card">
-            <h2 class="card-title">Self-Employment Tax Calculator</h2>
-            <p class="card-desc">Estimates based on net self-employment income.</p>
+            <h2 class="card-title">🇺🇸 Federal Tax Estimate</h2>
+            <p class="card-desc">2026 brackets · MFJ · Includes SE tax and standard deduction ($30,000).</p>
             <div class="calc-row">
-              <label>Net SE Income (annual)</label>
-              <input type="number" id="se-income" placeholder="e.g. 400000" oninput="calcSETax()" class="input-field" />
+              <label>Gross Fee Income</label>
+              <input type="number" id="fed-income" placeholder="e.g. 500000" oninput="calcBothTaxes()" class="input-field" />
             </div>
             <div class="calc-row">
-              <label>Filing Status</label>
-              <select id="se-filing" onchange="calcSETax()" class="select-control">
-                <option value="mfj">Married Filing Jointly</option>
-                <option value="single">Single</option>
-              </select>
-            </div>
-            <div class="calc-results" id="se-results"></div>
-          </div>
-
-          <!-- Annual Liability Estimate -->
-          <div class="card">
-            <h2 class="card-title">Annual Tax Liability Estimate</h2>
-            <p class="card-desc">Rough estimate for planning purposes — not tax advice.</p>
-            <div class="calc-row">
-              <label>Total Gross Income</label>
-              <input type="number" id="tax-income" placeholder="e.g. 500000" oninput="calcAnnualTax()" class="input-field" />
+              <label>Other Income (W-2, investments)</label>
+              <input type="number" id="fed-other" placeholder="e.g. 0" oninput="calcBothTaxes()" class="input-field" />
             </div>
             <div class="calc-row">
               <label>Business Deductions</label>
-              <input type="number" id="tax-deductions" placeholder="e.g. 50000" oninput="calcAnnualTax()" class="input-field" />
+              <input type="number" id="fed-deductions" placeholder="e.g. 50000" oninput="calcBothTaxes()" class="input-field" />
             </div>
             <div class="calc-row">
               <label>Filing Status</label>
-              <select id="tax-filing" onchange="calcAnnualTax()" class="select-control">
+              <select id="fed-filing" onchange="calcBothTaxes()" class="select-control">
                 <option value="mfj">Married Filing Jointly</option>
                 <option value="single">Single</option>
               </select>
             </div>
-            <div class="calc-results" id="annual-results"></div>
+            <div class="calc-results" id="federal-results"></div>
           </div>
 
+          <!-- MA Tax -->
+          <div class="card">
+            <h2 class="card-title">🦞 Massachusetts Tax Estimate</h2>
+            <p class="card-desc">5% flat rate · 9% on income over $1M (Millionaires Tax) · No SE tax deduction for MA.</p>
+            <div class="calc-row">
+              <label>Gross Fee Income</label>
+              <input type="number" id="ma-income" placeholder="Auto-fills from Federal" oninput="calcBothTaxes()" class="input-field" />
+            </div>
+            <div class="calc-row">
+              <label>Other MA Income</label>
+              <input type="number" id="ma-other" placeholder="e.g. 0" oninput="calcBothTaxes()" class="input-field" />
+            </div>
+            <div class="calc-row">
+              <label>MA Deductions</label>
+              <input type="number" id="ma-deductions" placeholder="e.g. 0" oninput="calcBothTaxes()" class="input-field" />
+            </div>
+            <div style="height:48px"></div>
+            <div class="calc-results" id="ma-results"></div>
+          </div>
         </div>
+
+        <!-- Combined Summary -->
+        <div class="card" style="background:var(--navy)">
+          <h2 class="card-title" style="color:rgba(255,255,255,0.6);font-size:12px;letter-spacing:0.08em;text-transform:uppercase">Combined Federal + MA Summary</h2>
+          <div id="combined-results"></div>
+        </div>
+
       </div>
 
     </main>
