@@ -33,6 +33,7 @@ async function initApp() {
     loadAssets(),
     loadAllPlaidData(),
     loadCollege(),
+    loadFeesFromGoogleDrive(),
     loadAccountTags(),
     loadTaxPayments(),
   ]);
