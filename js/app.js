@@ -70,6 +70,13 @@ function renderDashboard() {
     document.getElementById('dash-credit').textContent = fmt(creditTotal);
   }
 
+  // College savings dashboard card
+  const tagged529 = plaidAccounts.filter(a => accountTags[a.account_id]?.tag === 'college_529');
+  const collegeTotal = tagged529.reduce((s,a) => s + (a.balances?.current||0), 0) +
+                       collegeData.reduce((s,a) => s + Number(a.value||0), 0);
+  const collegEl = document.getElementById('dash-college');
+  if (collegEl) collegEl.textContent = fmt(collegeTotal);
+
   // Net worth (from networth calculation)
   const nw = calcNetWorth();
   if (nw !== null) {
