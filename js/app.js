@@ -713,17 +713,4 @@ function onTagTypeChange() {
   const val = document.getElementById('tag-type').value;
   document.getElementById('tag-beneficiary-row').style.display = val === 'college_529' ? 'flex' : 'none';
 }
-}
 
-function renderNetWorth529WithPlaid(tagged529) {
-  const plaidTotal = tagged529.reduce((s, a) => s + (a.balances?.current || 0), 0);
-  const manualTotal = collegeData.reduce((s, a) => s + Number(a.value || 0), 0);
-  document.getElementById('nw-529-total').textContent = fmt(plaidTotal + manualTotal);
-
-  const el = document.getElementById('nw-529-list');
-  const allItems = [
-    ...tagged529.map(a => `<div class="nw-item"><span class="nw-item-label">${a.name} (${accountTags[a.account_id]?.beneficiary || '529'})</span><span class="nw-item-value" style="color:var(--gold)">${fmt(a.balances?.current || 0)}</span></div>`),
-    ...collegeData.map(a => `<div class="nw-item"><span class="nw-item-label">${a.label}</span><span class="nw-item-value" style="color:var(--gold)">${fmt(a.value)}</span></div>`)
-  ];
-  el.innerHTML = allItems.length ? allItems.join('') : '<div class="list-empty">No 529 accounts added.</div>';
-}
