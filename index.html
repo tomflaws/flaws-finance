@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Flaws Family Finance</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/app.css" />
+</head>
+<body>
+
+  <!-- PASSWORD GATE -->
+  <div id="gate" class="gate-screen">
+    <div class="gate-card">
+      <div class="gate-logo">
+        <span class="gate-logo-f">F</span>
+        <span class="gate-logo-text">FLAWS FAMILY FINANCE</span>
+      </div>
+      <p class="gate-sub">Private · Family Access Only</p>
+      <div class="gate-field">
+        <input type="password" id="gate-password" placeholder="Enter password" autocomplete="current-password" />
+        <button id="gate-btn" onclick="checkPassword()">Enter</button>
+      </div>
+      <p id="gate-error" class="gate-error"></p>
+    </div>
+  </div>
+
+  <!-- MAIN APP -->
+  <div id="app" class="app hidden">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <span class="brand-f">F</span>
+        <span class="brand-text">Flaws Finance</span>
+      </div>
+      <nav class="sidebar-nav">
+        <button class="nav-item active" data-tab="dashboard" onclick="showTab('dashboard', this)">
+          <span class="nav-icon">◈</span> Dashboard
+        </button>
+        <button class="nav-item" data-tab="accounts" onclick="showTab('accounts', this)">
+          <span class="nav-icon">⬡</span> Accounts
+        </button>
+        <button class="nav-item" data-tab="networth" onclick="showTab('networth', this)">
+          <span class="nav-icon">◎</span> Net Worth
+        </button>
+        <button class="nav-item" data-tab="spending" onclick="showTab('spending', this)">
+          <span class="nav-icon">◐</span> Spending
+        </button>
+        <button class="nav-item" data-tab="investments" onclick="showTab('investments', this)">
+          <span class="nav-icon">△</span> Investments
+        </button>
+        <button class="nav-item" data-tab="feeincome" onclick="showTab('feeincome', this)">
+          <span class="nav-icon">⊕</span> Fee Income
+        </button>
+        <button class="nav-item" data-tab="taxes" onclick="showTab('taxes', this)">
+          <span class="nav-icon">◻</span> Tax Center
+        </button>
+      </nav>
+      <div class="sidebar-footer">
+        <button class="connect-btn" onclick="openPlaidLink()">+ Connect Account</button>
+        <p class="sidebar-connections" id="connection-count">0 / 10 connections</p>
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-content">
+
+      <!-- DASHBOARD TAB -->
+      <div id="tab-dashboard" class="tab-panel active">
+        <div class="page-header">
+          <h1 class="page-title">Good morning, Tom.</h1>
+          <span class="page-date" id="today-date"></span>
+        </div>
+        <div class="kpi-grid">
+          <div class="kpi-card kpi-primary">
+            <div class="kpi-label">Net Worth</div>
+            <div class="kpi-value" id="dash-networth">—</div>
+            <div class="kpi-sub">assets minus liabilities</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Cash & Savings</div>
+            <div class="kpi-value" id="dash-cash">—</div>
+            <div class="kpi-sub">checking + savings</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Investments</div>
+            <div class="kpi-value" id="dash-investments">—</div>
+            <div class="kpi-sub">brokerage + retirement</div>
+          </div>
+          <div class="kpi-card kpi-warn">
+            <div class="kpi-label">Credit Card Balances</div>
+            <div class="kpi-value" id="dash-credit">—</div>
+            <div class="kpi-sub">total owed</div>
+          </div>
+        </div>
+        <div class="dash-grid">
+          <div class="card">
+            <div class="card-header">
+              <h2 class="card-title">This Month's Spending</h2>
+              <span class="card-badge" id="dash-month"></span>
+            </div>
+            <div id="dash-spending-list" class="list-empty">Connect an account to see spending.</div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <h2 class="card-title">Fee Income YTD</h2>
+            </div>
+            <div class="kpi-value kpi-large" id="dash-fee-ytd">$0</div>
+            <div class="kpi-sub">year to date</div>
+            <div id="dash-fee-recent" class="fee-recent-list"></div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <h2 class="card-title">Next Tax Deadline</h2>
+            </div>
+            <div id="dash-tax-deadline" class="tax-deadline-block"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ACCOUNTS TAB -->
+      <div id="tab-accounts" class="tab-panel hidden">
+        <div class="page-header">
+          <h1 class="page-title">Accounts</h1>
+          <button class="btn-primary" onclick="openPlaidLink()">+ Connect Account</button>
+        </div>
+        <div id="accounts-list" class="accounts-grid">
+          <div class="empty-state">
+            <div class="empty-icon">⬡</div>
+            <p>No accounts connected yet.</p>
+            <button class="btn-primary" onclick="openPlaidLink()">Connect Your First Account</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- NET WORTH TAB -->
+      <div id="tab-networth" class="tab-panel hidden">
+        <div class="page-header">
+          <h1 class="page-title">Net Worth</h1>
+        </div>
+        <div class="networth-total-block">
+          <div class="networth-label">Total Net Worth</div>
+          <div class="networth-number" id="nw-total">—</div>
+        </div>
+        <div class="nw-sections">
+          <div class="card">
+            <div class="card-header">
+              <h2 class="card-title">Financial Accounts</h2>
+              <span class="card-total" id="nw-accounts-total">—</span>
+            </div>
+            <div id="nw-accounts-list" class="list-empty">No accounts connected.</div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <h2 class="card-title">Real Estate</h2>
+              <span class="card-total" id="nw-real-estate-total">$0</span>
+            </div>
+            <div id="nw-real-estate-list"></div>
+            <button class="btn-secondary mt-1" onclick="openModal('real-estate-modal')">+ Add Property</button>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <h2 class="card-title">Vehicles</h2>
+              <span class="card-total" id="nw-vehicles-total">$0</span>
+            </div>
+            <div id="nw-vehicles-list"></div>
+            <button class="btn-secondary mt-1" onclick="openModal('vehicle-modal')">+ Add Vehicle</button>
+          </div>
+          <div class="card card-liabilities">
+            <div class="card-header">
+              <h2 class="card-title">Liabilities</h2>
+              <span class="card-total card-total-neg" id="nw-liabilities-total">$0</span>
+            </div>
+            <div id="nw-liabilities-list" class="list-empty">No liabilities from connected accounts.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SPENDING TAB -->
+      <div id="tab-spending" class="tab-panel hidden">
+        <div class="page-header">
+          <h1 class="page-title">Spending</h1>
+          <div class="header-controls">
+            <select id="spending-month-filter" onchange="filterTransactions()" class="select-control">
+              <option value="">All Recent</option>
+            </select>
+            <select id="spending-category-filter" onchange="filterTransactions()" class="select-control">
+              <option value="">All Categories</option>
+            </select>
+          </div>
+        </div>
+        <div class="spending-layout">
+          <div class="card spending-summary-card">
+            <h2 class="card-title">By Category</h2>
+            <div id="spending-category-breakdown"></div>
+          </div>
+          <div class="card spending-transactions-card">
+            <h2 class="card-title">Transactions</h2>
+            <div id="transactions-list" class="list-empty">Connect an account to see transactions.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- INVESTMENTS TAB -->
+      <div id="tab-investments" class="tab-panel hidden">
+        <div class="page-header">
+          <h1 class="page-title">Investments</h1>
+        </div>
+        <div class="kpi-grid">
+          <div class="kpi-card kpi-primary">
+            <div class="kpi-label">Total Portfolio</div>
+            <div class="kpi-value" id="inv-total">—</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Total Cost Basis</div>
+            <div class="kpi-value" id="inv-basis">—</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Unrealized Gain/Loss</div>
+            <div class="kpi-value" id="inv-gain">—</div>
+          </div>
+        </div>
+        <div class="card mt-2">
+          <h2 class="card-title">Holdings</h2>
+          <div id="holdings-list" class="list-empty">Connect an investment account to see holdings.</div>
+        </div>
+      </div>
+
+      <!-- FEE INCOME TAB -->
+      <div id="tab-feeincome" class="tab-panel hidden">
+        <div class="page-header">
+          <h1 class="page-title">Fee Income</h1>
+          <button class="btn-primary" onclick="openModal('fee-modal')">+ Log Fee</button>
+        </div>
+        <div class="kpi-grid">
+          <div class="kpi-card kpi-primary">
+            <div class="kpi-label">YTD Fee Income</div>
+            <div class="kpi-value" id="fee-ytd">$0</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">This Month</div>
+            <div class="kpi-value" id="fee-month">$0</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Last 12 Months</div>
+            <div class="kpi-value" id="fee-12mo">$0</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Fees Logged</div>
+            <div class="kpi-value" id="fee-count">0</div>
+          </div>
+        </div>
+        <div class="card mt-2">
+          <h2 class="card-title">Fee Log</h2>
+          <div id="fee-list" class="list-empty">No fees logged yet. Click "+ Log Fee" to add one.</div>
+        </div>
+      </div>
+
+      <!-- TAX CENTER TAB -->
+      <div id="tab-taxes" class="tab-panel hidden">
+        <div class="page-header">
+          <h1 class="page-title">Tax Center</h1>
+        </div>
+
+        <div class="tax-grid">
+
+          <!-- Quarterly Tracker -->
+          <div class="card">
+            <h2 class="card-title">Quarterly Estimated Payments</h2>
+            <p class="card-desc">Track your IRS estimated tax payments (Form 1040-ES).</p>
+            <div class="quarter-grid" id="quarter-grid"></div>
+          </div>
+
+          <!-- SE Tax Calculator -->
+          <div class="card">
+            <h2 class="card-title">Self-Employment Tax Calculator</h2>
+            <p class="card-desc">Estimates based on net self-employment income.</p>
+            <div class="calc-row">
+              <label>Net SE Income (annual)</label>
+              <input type="number" id="se-income" placeholder="e.g. 400000" oninput="calcSETax()" class="input-field" />
+            </div>
+            <div class="calc-row">
+              <label>Filing Status</label>
+              <select id="se-filing" onchange="calcSETax()" class="select-control">
+                <option value="mfj">Married Filing Jointly</option>
+                <option value="single">Single</option>
+              </select>
+            </div>
+            <div class="calc-results" id="se-results"></div>
+          </div>
+
+          <!-- Annual Liability Estimate -->
+          <div class="card">
+            <h2 class="card-title">Annual Tax Liability Estimate</h2>
+            <p class="card-desc">Rough estimate for planning purposes — not tax advice.</p>
+            <div class="calc-row">
+              <label>Total Gross Income</label>
+              <input type="number" id="tax-income" placeholder="e.g. 500000" oninput="calcAnnualTax()" class="input-field" />
+            </div>
+            <div class="calc-row">
+              <label>Business Deductions</label>
+              <input type="number" id="tax-deductions" placeholder="e.g. 50000" oninput="calcAnnualTax()" class="input-field" />
+            </div>
+            <div class="calc-row">
+              <label>Filing Status</label>
+              <select id="tax-filing" onchange="calcAnnualTax()" class="select-control">
+                <option value="mfj">Married Filing Jointly</option>
+                <option value="single">Single</option>
+              </select>
+            </div>
+            <div class="calc-results" id="annual-results"></div>
+          </div>
+
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- MODALS -->
+
+  <!-- Fee Income Modal -->
+  <div id="fee-modal" class="modal-overlay hidden" onclick="closeModalOutside(event, 'fee-modal')">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2>Log Fee Income</h2>
+        <button onclick="closeModal('fee-modal')" class="modal-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-row">
+          <label>Date Received</label>
+          <input type="date" id="fee-date" class="input-field" />
+        </div>
+        <div class="form-row">
+          <label>Client / Case Name</label>
+          <input type="text" id="fee-client" placeholder="e.g. Smith v. General Hospital" class="input-field" />
+        </div>
+        <div class="form-row">
+          <label>Fee Amount</label>
+          <input type="number" id="fee-amount" placeholder="e.g. 125000" class="input-field" />
+        </div>
+        <div class="form-row">
+          <label>Practice Area</label>
+          <select id="fee-area" class="select-control">
+            <option>Motor Vehicle Accident</option>
+            <option>Premises Liability</option>
+            <option>Medical Malpractice</option>
+            <option>Wrongful Death</option>
+            <option>Workers Compensation</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label>Notes</label>
+          <input type="text" id="fee-notes" placeholder="Optional" class="input-field" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="closeModal('fee-modal')">Cancel</button>
+        <button class="btn-primary" onclick="saveFee()">Save Fee</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Real Estate Modal -->
+  <div id="real-estate-modal" class="modal-overlay hidden" onclick="closeModalOutside(event, 'real-estate-modal')">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2>Add Property</h2>
+        <button onclick="closeModal('real-estate-modal')" class="modal-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-row">
+          <label>Address</label>
+          <input type="text" id="re-address" placeholder="e.g. 123 Main St, Lynnfield MA" class="input-field" />
+        </div>
+        <div class="form-row">
+          <label>Estimated Value</label>
+          <input type="number" id="re-value" placeholder="e.g. 950000" class="input-field" />
+        </div>
+        <div class="form-row">
+          <label>Mortgage Balance (if any)</label>
+          <input type="number" id="re-mortgage" placeholder="e.g. 400000" class="input-field" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="closeModal('real-estate-modal')">Cancel</button>
+        <button class="btn-primary" onclick="saveRealEstate()">Save Property</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Vehicle Modal -->
+  <div id="vehicle-modal" class="modal-overlay hidden" onclick="closeModalOutside(event, 'vehicle-modal')">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2>Add Vehicle</h2>
+        <button onclick="closeModal('vehicle-modal')" class="modal-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-row">
+          <label>Vehicle</label>
+          <input type="text" id="veh-name" placeholder="e.g. Tesla Model S" class="input-field" />
+        </div>
+        <div class="form-row">
+          <label>Year</label>
+          <input type="number" id="veh-year" placeholder="e.g. 2022" class="input-field" />
+        </div>
+        <div class="form-row">
+          <label>Estimated Value</label>
+          <input type="number" id="veh-value" placeholder="e.g. 65000" class="input-field" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="closeModal('vehicle-modal')">Cancel</button>
+        <button class="btn-primary" onclick="saveVehicle()">Save Vehicle</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Plaid Link Script -->
+  <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/supabase.js"></script>
+  <script src="js/plaid.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
