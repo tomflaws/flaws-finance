@@ -29,7 +29,7 @@ function checkPassword() {
 
 async function initApp() {
   await Promise.all([
-    loadFees(),
+    loadFeesFromGoogleDrive(),
     loadAssets(),
     loadAllPlaidData(),
     loadTaxPayments(),
@@ -313,14 +313,14 @@ async function saveFee() {
   document.getElementById('fee-amount').value = '';
   document.getElementById('fee-notes').value = '';
   document.getElementById('fee-date').value = new Date().toISOString().split('T')[0];
-  await loadFees();
+  await loadFeesFromGoogleDrive();
   showToast('Fee logged.', 'success');
 }
 
 async function deleteFee(id) {
   if (!confirm('Delete this fee entry?')) return;
   await dbDeleteFee(id);
-  await loadFees();
+  await loadFeesFromGoogleDrive();
   showToast('Fee removed.');
 }
 
