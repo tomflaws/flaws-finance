@@ -472,6 +472,39 @@
     </div>
   </div>
 
+  <!-- Account Tag Modal -->
+  <div id="account-tag-modal" class="modal-overlay hidden" onclick="closeModalOutside(event, 'account-tag-modal')">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2>Tag Account</h2>
+        <button onclick="closeModal('account-tag-modal')" class="modal-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-row">
+          <label>Account</label>
+          <div id="tag-account-name" style="font-weight:600;color:var(--navy);padding:8px 0"></div>
+          <input type="hidden" id="tag-account-id" />
+        </div>
+        <div class="form-row">
+          <label>Account Type</label>
+          <select id="tag-type" class="select-control" onchange="onTagTypeChange()">
+            <option value="default">Default (no tag)</option>
+            <option value="college_529">🎓 529 College Savings</option>
+            <option value="exclude">Exclude from Net Worth</option>
+          </select>
+        </div>
+        <div class="form-row" id="tag-beneficiary-row" style="display:none">
+          <label>Beneficiary (Child's Name)</label>
+          <input type="text" id="tag-beneficiary" placeholder="e.g. James Flaws" class="input-field" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" onclick="closeModal('account-tag-modal')">Cancel</button>
+        <button class="btn-primary" onclick="saveAccountTag(document.getElementById('tag-account-id').value, document.getElementById('tag-type').value, document.getElementById('tag-beneficiary').value)">Save Tag</button>
+      </div>
+    </div>
+  </div>
+
   <!-- College 529 Modal -->
   <div id="college-modal" class="modal-overlay hidden" onclick="closeModalOutside(event, 'college-modal')">
     <div class="modal-card">
