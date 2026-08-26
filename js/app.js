@@ -72,8 +72,9 @@ function renderDashboard() {
   const cashAccounts = plaidAccounts.filter(a => a.type === 'depository');
   const cashTotal = cashAccounts.reduce((s, a) => s + (a.balances?.current || 0), 0);
 
-  // Investments
-  const invAccounts = plaidAccounts.filter(a => a.type === 'investment' || a.type === 'brokerage');
+  // Investments — exclude 529-tagged accounts
+  const tagged529Ids = Object.entries(accountTags).filter(([_,v]) => v.tag === 'college_529').map(([k]) => k);
+  const invAccounts = plaidAccounts.filter(a => (a.type === 'investment' || a.type === 'brokerage') && !tagged529Ids.includes(a.account_id));
   const invTotal = invAccounts.reduce((s, a) => s + (a.balances?.current || 0), 0);
 
   // Credit balances
@@ -403,7 +404,8 @@ function renderQuarterGrid() {
         <div style="margin-top:8px;font-size:11px;font-weight:600;color:var(--text-light);text-transform:uppercase;letter-spacing:0.06em">🇺🇸 Federal</div>
         <div style="display:flex;gap:6px;margin-top:4px">
           <input type="number" class="quarter-amount-input" style="flex:1" placeholder="Amount" value="${fed.amount || ''}"
-            oninput="updateQuarterTotal('${year}','${q.q}',this)" onchange="saveTaxPaymentSplit('${year}','${q.q}','FED',this.value)" id="fed-amt-${q.q}" />
+            oninput="updateQuarterTotal('${year}','${q.q}',this);saveTaxPaymentSplit('${year}','${q.q}','FED',this.value)"
+            id="fed-amt-${q.q}" />
           <button style="padding:6px 10px;border-radius:5px;border:1px solid var(--border);background:${fedPaid ? 'var(--green)' : 'white'};color:${fedPaid ? 'white' : 'var(--text-mid)'};cursor:pointer;font-size:11px"
             onclick="toggleTaxPaymentStatus('${year}','${q.q}','FED')">${fedPaid ? '✓ Paid' : 'Mark Paid'}</button>
         </div>
@@ -411,7 +413,8 @@ function renderQuarterGrid() {
         <div style="margin-top:10px;font-size:11px;font-weight:600;color:var(--text-light);text-transform:uppercase;letter-spacing:0.06em">🦞 Massachusetts</div>
         <div style="display:flex;gap:6px;margin-top:4px">
           <input type="number" class="quarter-amount-input" style="flex:1" placeholder="Amount" value="${ma.amount || ''}"
-            oninput="updateQuarterTotal('${year}','${q.q}',this)" onchange="saveTaxPaymentSplit('${year}','${q.q}','MA',this.value)" id="ma-amt-${q.q}" />
+            oninput="updateQuarterTotal('${year}','${q.q}',this);saveTaxPaymentSplit('${year}','${q.q}','MA',this.value)"
+            id="ma-amt-${q.q}" />
           <button style="padding:6px 10px;border-radius:5px;border:1px solid var(--border);background:${maPaid ? 'var(--green)' : 'white'};color:${maPaid ? 'white' : 'var(--text-mid)'};cursor:pointer;font-size:11px"
             onclick="toggleTaxPaymentStatus('${year}','${q.q}','MA')">${maPaid ? '✓ Paid' : 'Mark Paid'}</button>
         </div>
@@ -840,4 +843,3 @@ function onTagTypeChange() {
   const val = document.getElementById('tag-type').value;
   document.getElementById('tag-beneficiary-row').style.display = val === 'college_529' ? 'flex' : 'none';
 }
-
