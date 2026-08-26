@@ -227,7 +227,12 @@ function renderSpendingBreakdown(transactions) {
 
 function renderHoldings() {
   const el = document.getElementById('holdings-list');
-  if (!plaidHoldings.length) {
+
+  // Exclude 529-tagged accounts from investment display
+  const tagged529Ids = Object.entries(accountTags).filter(([_,v]) => v.tag === 'college_529').map(([k]) => k);
+  const filteredHoldings = plaidHoldings.filter(h => !tagged529Ids.includes(h.account_id));
+
+  if (!filteredHoldings.length) {
     el.innerHTML = '<div class="list-empty">Connect an investment account to see holdings.</div>';
     document.getElementById('inv-total').textContent = '—';
     document.getElementById('inv-basis').textContent = '—';
@@ -236,7 +241,7 @@ function renderHoldings() {
   }
 
   let totalVal = 0, totalBasis = 0;
-  plaidHoldings.forEach(h => {
+  filteredHoldings.forEach(h => {
     totalVal += h.institution_value || 0;
     totalBasis += h.cost_basis || 0;
   });
@@ -252,7 +257,7 @@ function renderHoldings() {
     <div class="holding-row" style="font-weight:600;font-size:11px;color:var(--text-light);text-transform:uppercase;letter-spacing:0.06em;border-bottom:2px solid var(--border)">
       <div>Symbol</div><div>Name</div><div style="text-align:right">Value</div><div style="text-align:right">Cost Basis</div><div style="text-align:right">Gain/Loss</div>
     </div>
-  ` + plaidHoldings.map(h => {
+  ` + filteredHoldings.map(h => {
     const g = (h.institution_value || 0) - (h.cost_basis || 0);
     return `
       <div class="holding-row">
